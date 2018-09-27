@@ -5,15 +5,19 @@ import (
 
 type Cursor struct {
     X, Y int
-    terminal *Terminal
+    Width, Height int
+    xBegin, xEnd int
 }
 
-func NewCursor(x, y int) *Cursor{
+func newCursor(p *Pane) *Cursor{
     c := &Cursor{
-        X: x,
-        Y: y,
+        X: p.PositionX,
+        Y: p.PositionY,
+        Width: p.Width,
+        Height: p.Height,
+        xBegin: p.xBegin,
+        xEnd: p.xEnd,
     }
     return c
 }
 
-// func (c *Cursor) Move

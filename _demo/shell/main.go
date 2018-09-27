@@ -9,7 +9,6 @@ import (
     "os/exec"
 )
 
-// var History = make([]string, 0)
 
 type History struct {
     index int
@@ -51,10 +50,8 @@ func main() {
     prefix := "wsh > $ "
     t, err := terminal.New()
     t.AppendCellFromString(prefix)
-    // t, err := terminal.NewFromString(prefix)
     t.SetMode(terminal.ModeInsert)
     t.SetLineRange(len(prefix), 0)
-    // t.MoveCursorToLastCell()
     if err != nil {
         panic(err)
     }
