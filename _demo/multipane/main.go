@@ -31,9 +31,9 @@ Use i insert ` + out
 
 
 func main() {
-    out := InitData()
+    // out := InitData()
 
-    t, err := terminal.NewFromString(out)
+    t, err := terminal.NewFromString("")
     if err != nil {
         panic(err)
     }

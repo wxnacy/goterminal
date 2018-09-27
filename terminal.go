@@ -180,6 +180,9 @@ func (t *Terminal) MoveCursorDown() {
 
 func (t *Terminal) MoveCursorLeft() {
     p := t.HasCursorPane()
+    if p.xBegin == p.CursorX {
+        return
+    }
     c := getPrevCell(p.getRealLine(p.CursorY), p.CursorX, 1)
     if c.Ch > 0 {
         x, y := c.Position()
