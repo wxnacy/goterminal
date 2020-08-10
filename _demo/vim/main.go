@@ -33,7 +33,8 @@ Use i insert ` + out
 func main() {
     out := InitData()
 
-    t, err := terminal.NewFromString(out)
+    t, err := terminal.New(out)
+    // t.AddPaneLandscape(InitData())
     if err != nil {
         panic(err)
     }
@@ -42,7 +43,7 @@ func main() {
         t.Rendering()
         e := t.PollEvent()
         t.ListenKeyBoardLikeVim(e)
-        LogFile(strconv.Itoa(t.Width) , strconv.Itoa(t.Height))
+        // LogFile(strconv.Itoa(t.Width) , strconv.Itoa(t.Height))
         LogFile(
             string(e.Ch),
             strconv.Itoa(t.CursorX),

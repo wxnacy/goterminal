@@ -10,7 +10,7 @@ type Pane struct {
     Width, Height int               // 窗口的宽高
     hasCursor bool                  // 是否有光标
 	CursorX, CursorY int            // 光标坐标
-    PositionX, PositionY int
+    positionX, positionY int        // 位置
     xBegin, xEnd int
     PageWidth, PageHeight int       // 内容的宽高
 	PageOffsetX, PageOffsetY int    // 内容和窗口的偏移坐标
@@ -32,9 +32,13 @@ func newPane(w, h int) *Pane {
         xBegin: DefaultXBegin,
         xEnd: DefaultXEnd,
     }
-
     return p
 }
+
+func (p *Pane) removeCursor() {
+    p.hasCursor = false
+}
+
 
 func printCells(cells [][]Cell) {
     chs := make([]rune, 0)
@@ -46,6 +50,25 @@ func printCells(cells [][]Cell) {
     }
 
     LogFile("cells", string(chs))
+}
+
+func (p *Pane) setSize(w, h int) {
+    p.Width = w
+    p.Height = h
+    p.reset()
+}
+
+func (p *Pane) setPosition(x, y int) {
+    p.positionX = x
+    p.positionY = y
+    p.CursorX = x
+    p.CursorY = y
+    // p.xBegin = x
+    p.reset()
+}
+
+func (p *Pane) Size() (int, int) {
+    return p.Width, p.Height
 }
 
 func (p *Pane) AppendCellFromString(s string) {
@@ -303,7 +326,7 @@ func (p *Pane) realOffsetX(x int) int {
 // 启动光标
 func (p *Pane) MoveCursor(x, y int) {
     line := p.GetLine(p.CursorY)
-    minWidth := min(cellsWidth(line), p.Width)
+    minWidth := min(cellsWidth(line), p.Width) + p.positionX
     minHeight := min(p.PageHeight, p.Height)
 
     cx := p.CursorX + x
@@ -342,7 +365,7 @@ func (p *Pane) MoveCursor(x, y int) {
             "move after cursorx", strconv.Itoa(p.CursorX), "cursory",
             strconv.Itoa(p.CursorY),
         )
-        termbox.SetCursor(p.CursorX, p.CursorY)
+        termbox.SetCursor(p.terminalCursor())
         termbox.Flush()
     }
     if p.CursorY + 1 == p.Height || p.CursorY == 0{
@@ -356,13 +379,16 @@ func (p *Pane) MoveCursor(x, y int) {
 
 // 渲染
 func (p *Pane) Rendering() {
-    termbox.Clear(termbox.ColorWhite, termbox.ColorDefault)
-
     p.reset()
 
     for y, yd := range p.viewCells {
-        x := 0
-        for _, d := range yd {
+        x := p.positionX
+        LoopX:
+        for xi := p.PageOffsetX; xi < p.Width; xi++ {
+            if xi >= len(yd) {
+                break LoopX
+            }
+            d := yd[xi]
             termbox.SetCell(x, y, d.Ch, d.Fg, d.Bg)
             x += d.Width()
         }
@@ -385,9 +411,10 @@ func (p *Pane) Rendering() {
         }
     }
 
-    termbox.SetCursor(p.CursorX, p.CursorY)
-    termbox.Flush()
+}
 
+func (p *Pane) terminalCursor() (int, int){
+    return p.positionX + p.CursorX, p.positionY + p.CursorY
 }
 
 func (p *Pane) reset() {

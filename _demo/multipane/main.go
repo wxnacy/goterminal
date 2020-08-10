@@ -31,18 +31,18 @@ Use i insert ` + out
 
 
 func main() {
-    // out := InitData()
+    out := InitData()
 
-    t, err := terminal.NewFromString("")
+    t, err := terminal.New(out)
     if err != nil {
         panic(err)
     }
+    t.AddPaneLandscape("\nHello World Hello World Hello World Hello World Hello World   \n Hello World \n Hello World \n Hello World ")
     defer t.Close()
     for {
         t.Rendering()
         e := t.PollEvent()
         t.ListenKeyBoardLikeVim(e)
-        LogFile(strconv.Itoa(t.Width) , strconv.Itoa(t.Height))
         LogFile(
             string(e.Ch),
             strconv.Itoa(t.CursorX),

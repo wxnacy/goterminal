@@ -4,6 +4,7 @@ import (
     "github.com/nsf/termbox-go"
     "strings"
     "os"
+    "strconv"
 )
 
 type Event struct {
@@ -12,7 +13,7 @@ type Event struct {
 }
 
 type Terminal struct {
-    Width, Height    int
+    width, height    int
 	CursorX, CursorY int
     xBegin, xEnd int
     PageWidth, PageHeight int
@@ -21,20 +22,35 @@ type Terminal struct {
     Mode Mode
     cells [][]Cell
     viewCells [][]Cell
-    panes []*Pane
+    panes [][]*Pane
 }
 
-// func (t *Terminal) AddPaneLandscape() *Pane {
-    // t.panes = append(t.panes, p)
-// }
+func (t *Terminal) AddPaneLandscape(s string) {
+    tw, th := t.Size()
+    _ = tw
+    _ = th
 
-// func (t *Terminal) AddPaneVertical(p *Pane) {
-    // p.hasCursor = true
-    // t.panes = append(t.panes, p)
-// }
+    nowP := t.HasCursorPane()
+    w, h := nowP.Size()
+    nowP.setSize(w / 2, h)
+
+    for _, yd := range t.panes {
+        for _, xd := range yd {
+            xd.removeCursor()
+        }
+    }
+
+    p := newPane(w / 2, h)
+    p.setPosition(w / 2 + 1, nowP.positionY)
+    p.AppendCellFromString(s)
+
+    t.panes[0] = append(t.panes[0], p)
+    LogFile("panes", strconv.Itoa(len(t.panes)))
+}
 
 
-func New() (*Terminal, error){
+
+func New(s string) (*Terminal, error){
     err := termbox.Init()
     if err != nil {
         return nil, err
@@ -44,23 +60,16 @@ func New() (*Terminal, error){
 
     p := newPane(w, h)
 
-    return &Terminal{
-        Width: w,
-        Height: h,
+    t := &Terminal{
+        width: w,
+        height: h,
         E: &Event{},
         cells: make([][]Cell, 0),
         viewCells: make([][]Cell, 0),
         Mode: ModeNormal,
         xBegin: DefaultXBegin,
         xEnd: DefaultXEnd,
-        panes: []*Pane{p},
-    }, nil
-}
-
-func NewFromString(s string) (*Terminal, error){
-    t, err := New()
-    if err != nil {
-        return nil, err
+        panes: [][]*Pane{[]*Pane{p}},
     }
 
     t.AppendCellFromString(s)
@@ -68,18 +77,22 @@ func NewFromString(s string) (*Terminal, error){
     return t, nil
 }
 
+
+func (t *Terminal) Size() (int, int) {
+    LogFile("terminal size", strconv.Itoa(t.width), strconv.Itoa(t.height))
+    return t.width, t.height
+}
+
 func (t *Terminal) HasCursorPane() *Pane{
-    for _, d := range t.panes {
-        if d.hasCursor {
-            return d
+    for _, y := range t.panes {
+        for _, d := range y {
+            if d.hasCursor {
+                return d
+            }
         }
     }
     return nil
 }
-
-// func (t *Terminal) ResetPageSize() {
-    // t.PageHeight = len(t.cells)
-// }
 
 
 
@@ -108,37 +121,22 @@ func (t *Terminal) Run(onCh func(ch rune), onKey func(key termbox.Key)) {
 
 }
 
-// func (t *Terminal) SetCells(cells [][]Cell) {
-    // t.cells = cells
-    // t.ResetViewCells()
-    // t.ResetPageSize()
-// }
-
 // 渲染
 func (t *Terminal) Rendering() {
-    t.HasCursorPane().Rendering()
+    termbox.Clear(termbox.ColorWhite, termbox.ColorDefault)
+    for _, yd := range t.panes {
+        for _, xd := range yd {
+            xd.Rendering()
+        }
+    }
+    p := t.HasCursorPane()
+    termbox.SetCursor(p.terminalCursor())
+    termbox.Flush()
 }
 
 func (t *Terminal) SetMode(m Mode) {
     t.HasCursorPane().SetMode(m)
 }
-
-// 重置显示的 cell 集合
-// func (t *Terminal) ResetViewCells() {
-    // viewCells := make([][]Cell, 0)
-    // minLine := min(t.PageHeight, t.Height)
-    // for y := 0; y < minLine; y++ {
-        // newLine := make([]Cell, 0)
-        // index := min(y + t.PageOffsetY, t.PageHeight - 1)
-        // line := t.cells[index]
-        // for x := t.PageOffsetX; x < len(line); x++ {
-            // d := line[x]
-            // newLine = append(newLine, d)
-        // }
-        // viewCells = append(viewCells, newLine)
-    // }
-    // t.viewCells = viewCells
-// }
 
 
 func (t *Terminal) Insert(ch rune) {
@@ -274,10 +272,10 @@ func (t *Terminal) PollEvent() termbox.Event{
 
 func (t *Terminal) Resize(w, h int) {
 
-    t.Width = w
-    t.Height = h
-    t.CursorX = min(t.Width - 1, t.CursorX)
-    t.CursorY = min(t.Height - 1, t.CursorY)
+    t.width = w
+    t.height = h
+    t.CursorX = min(t.width - 1, t.CursorX)
+    t.CursorY = min(t.height - 1, t.CursorY)
     t.Rendering()
 
 }
